@@ -1,222 +1,356 @@
-# FitFuel - Gym Supplements E-commerce Platform (Node.js + MongoDB)
+# MongoDB Node.js Driver
 
-Modernized e-commerce starter focused on gym supplements. Backend is now Node.js (Express) with MongoDB via Mongoose. PHP, XAMPP, and MySQL artifacts were removed.
+The official [MongoDB](https://www.mongodb.com/) driver for Node.js.
 
-## Features
+**Upgrading to version 6? Take a look at our [upgrade guide here](https://github.com/mongodb/node-mongodb-native/blob/HEAD/etc/notes/CHANGES_6.0.0.md)!**
 
-- **User Management**: Registration and login with JWT
-- **Product Catalog**: Query products by search and category
-- **Shopping Cart**: Add and list cart items per user
-- **Wallet (Local only)**: Demo wallet persisted in browser `localStorage`
+## Quick Links
 
-## Project Structure
+| Site                     | Link                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation            | [www.mongodb.com/docs/drivers/node](https://www.mongodb.com/docs/drivers/node)                                                        |
+| API Docs                 | [mongodb.github.io/node-mongodb-native](https://mongodb.github.io/node-mongodb-native)                                                |
+| `npm` package            | [www.npmjs.com/package/mongodb](https://www.npmjs.com/package/mongodb)                                                                |
+| MongoDB                  | [www.mongodb.com](https://www.mongodb.com)                                                                                            |
+| MongoDB University       | [learn.mongodb.com](https://learn.mongodb.com/catalog?labels=%5B%22Language%22%5D&values=%5B%22Node.js%22%5D)                         |
+| MongoDB Developer Center | [www.mongodb.com/developer](https://www.mongodb.com/developer/languages/javascript/)                                                  |
+| Stack Overflow           | [stackoverflow.com](https://stackoverflow.com/search?q=%28%5Btypescript%5D+or+%5Bjavascript%5D+or+%5Bnode.js%5D%29+and+%5Bmongodb%5D) |
+| Source Code              | [github.com/mongodb/node-mongodb-native](https://github.com/mongodb/node-mongodb-native)                                              |
+| Upgrade to v6            | [etc/notes/CHANGES_6.0.0.md](https://github.com/mongodb/node-mongodb-native/blob/HEAD/etc/notes/CHANGES_6.0.0.md)                     |
+| Contributing             | [CONTRIBUTING.md](https://github.com/mongodb/node-mongodb-native/blob/HEAD/CONTRIBUTING.md)                                           |
+| Changelog                | [HISTORY.md](https://github.com/mongodb/node-mongodb-native/blob/HEAD/HISTORY.md)                                                     |
 
+
+
+### Release Integrity
+
+Releases are created automatically and signed using the [Node team's GPG key](https://pgp.mongodb.com/node-driver.asc). This applies to the git tag as well as all release packages provided as part of a GitHub release. To verify the provided packages, download the key and import it using gpg:
+
+```shell
+gpg --import node-driver.asc
 ```
-Fitfuel-project-main/
-├── models/
-│   ├── User.js
-│   ├── Product.js
-│   └── CartItem.js
-├── routes/
-│   ├── auth.js        # /api/auth
-│   ├── products.js    # /api/products
-│   └── cart.js        # /api/cart
-├── server.js          # Express server + MongoDB connection
-├── .env.example       # Environment variables template
-├── index.html         # Frontend static pages (no PHP)
-└── ...                # Other HTML/CSS/JS assets
+
+The GitHub release contains a detached signature file for the NPM package (named
+`mongodb-X.Y.Z.tgz.sig`).
+
+The following command returns the link npm package.
+```shell
+npm view mongodb@vX.Y.Z dist.tarball
 ```
 
-## Prerequisites
+Using the result of the above command, a `curl` command can return the official npm package for the release.
 
-- Node.js 18+
-- MongoDB (local or Atlas)
+To verify the integrity of the downloaded package, run the following command:
+```shell
+gpg --verify mongodb-X.Y.Z.tgz.sig mongodb-X.Y.Z.tgz
+```
 
-## Setup
+>[!Note]
+No verification is done when using npm to install the package. The contents of the Github tarball and npm's tarball are identical.
 
-1. Install dependencies
-   ```bash
-   npm install
-   ```
+The MongoDB Node.js driver follows [semantic versioning](https://semver.org/) for its releases.
 
-2. Configure environment
-   - Copy `.env.example` to `.env`
-   - Set `MONGO_URI` (e.g., `mongodb://127.0.0.1:27017/fitfuel`)
-   - Set a strong `JWT_SECRET`
+### Bugs / Feature Requests
 
-3. Seed data (optional quick start)
-   - Insert a few `Product` documents in your MongoDB `fitfuel` database to see products on the frontend.
+Think you’ve found a bug? Want to see a new feature in `node-mongodb-native`? Please open a
+case in our issue management tool, JIRA:
 
-4. Run the server
-   ```bash
-   npm run dev
-   ```
-   Server runs at: http://localhost:5000
+- Create an account and login [jira.mongodb.org](https://jira.mongodb.org).
+- Navigate to the NODE project [jira.mongodb.org/browse/NODE](https://jira.mongodb.org/browse/NODE).
+- Click **Create Issue** - Please provide as much information as possible about the issue type and how to reproduce it.
 
-5. Open the static frontend
-   - Open `index.html` (and other `.html` pages) in your browser directly or serve statically.
+Bug reports in JIRA for all driver projects (i.e. NODE, PYTHON, CSHARP, JAVA) and the
+Core Server (i.e. SERVER) project are **public**.
 
-## API Endpoints
+### Support / Feedback
 
-### Auth
-- `POST /api/auth/register` { name, email, password }
-- `POST /api/auth/login` { email, password } → `{ token, user }`
+For issues with, questions about, or feedback for the Node.js driver, please look into our [support channels](https://www.mongodb.com/docs/manual/support). Please do not email any of the driver developers directly with issues or questions - you're more likely to get an answer on the [MongoDB Community Forums](https://community.mongodb.com/tags/c/drivers-odms-connectors/7/node-js-driver).
 
-### Products
-- `GET /api/products`
-  - Query params: `search`, `category`
+### Change Log
 
-### Cart (requires Authorization: Bearer <token>)
-- `GET /api/cart`
-- `POST /api/cart/add` { productId, quantity }
+Change history can be found in [`HISTORY.md`](https://github.com/mongodb/node-mongodb-native/blob/HEAD/HISTORY.md).
 
-## Notes
+### Compatibility
 
-- PHP/XAMPP and MySQL files were removed from the stack. The backend is fully Node.js + MongoDB.
-- Frontend is static and uses `localStorage` for cart and wallet demo. You can wire it to call the new API endpoints as needed.
+The driver currently supports 4.2+ servers.
 
-## Scripts
+For exhaustive server and runtime version compatibility matrices, please refer to the following links:
 
-- `npm run dev` — start Express in dev mode
-- `npm start` — start Express in production mode
+- [MongoDB](https://www.mongodb.com/docs/drivers/node/current/compatibility/#mongodb-compatibility)
+- [NodeJS](https://www.mongodb.com/docs/drivers/node/current/compatibility/#language-compatibility)
 
-## Security
+#### Component Support Matrix
 
-- Passwords hashed with `bcrypt`
-- JWT-based auth
-- CORS enabled
+The following table describes add-on component version compatibility for the Node.js driver. Only packages with versions in these supported ranges are stable when used in combination.
 
-## Backend Setup Guide
+| Component                                                                            | `mongodb@3.x`      | `mongodb@4.x`      | `mongodb@5.x`      | `mongodb@<6.12` | `mongodb@>=6.12`   |
+| ------------------------------------------------------------------------------------ | ------------------ | ------------------ | ------------------ | --------------- | ------------------ |
+| [bson](https://www.npmjs.com/package/bson)                                           | ^1.0.0             | ^4.0.0             | ^5.0.0             | ^6.0.0          | ^6.0.0             |
+| [bson-ext](https://www.npmjs.com/package/bson-ext)                                   | ^1.0.0 \|\| ^2.0.0 | ^4.0.0             | N/A                | N/A             | N/A                |
+| [kerberos](https://www.npmjs.com/package/kerberos)                                   | ^1.0.0             | ^1.0.0 \|\| ^2.0.0 | ^1.0.0 \|\| ^2.0.0 | ^2.0.1          | ^2.0.1             |
+| [mongodb-client-encryption](https://www.npmjs.com/package/mongodb-client-encryption) | ^1.0.0             | ^1.0.0 \|\| ^2.0.0 | ^2.3.0             | ^6.0.0          | ^6.0.0             |
+| [mongodb-legacy](https://www.npmjs.com/package/mongodb-legacy)                       | N/A                | ^4.0.0             | ^5.0.0             | ^6.0.0          | ^6.0.0             |
+| [@mongodb-js/zstd](https://www.npmjs.com/package/@mongodb-js/zstd)                   | N/A                | ^1.0.0             | ^1.0.0             | ^1.1.0          | ^1.1.0 \|\| ^2.0.0 |
 
-This guide explains how to configure and run the backend API using MongoDB (local or Atlas) and Node.js.
 
-### 1) Prerequisites
+#### Typescript Version
 
-- Node.js 18+
-- npm (bundled with Node.js)
-- MongoDB Community Server (for local) or a MongoDB Atlas cluster
+We recommend using the latest version of typescript, however we currently ensure the driver's public types compile against `typescript@4.4.0`.
+This is the lowest typescript version guaranteed to work with our driver: older versions may or may not work - use at your own risk.
+Since typescript [does not restrict breaking changes to major versions](https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes), we consider this support best effort.
+If you run into any unexpected compiler failures against our supported TypeScript versions, please let us know by filing an issue on our [JIRA](https://jira.mongodb.org/browse/NODE).
 
-### 2) Install Dependencies
+Additionally, our Typescript types are compatible with the ECMAScript standard for our minimum supported Node version.  Currently, our Typescript targets es2021.
+
+## Installation
+
+The recommended way to get started using the Node.js 5.x driver is by using the `npm` (Node Package Manager) to install the dependency in your project.
+
+After you've created your own project using `npm init`, you can run:
 
 ```bash
-npm install
+npm install mongodb
 ```
 
-### 3) Environment Variables
+This will download the MongoDB driver and add a dependency entry in your `package.json` file.
 
-Copy `.env.example` to `.env` in the project root and fill in the values.
+If you are a Typescript user, you will need the Node.js type definitions to use the driver's definitions:
 
-Required variables:
-
-- `PORT` — API server port (default: 5000)
-- `MONGO_URI` — your MongoDB connection string
-  - Local example: `mongodb://127.0.0.1:27017/fitfuel`
-  - Atlas example: `mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/fitfuel`
-- `JWT_SECRET` — a strong secret for signing JWTs
-
-Example `.env`:
-
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/fitfuel
-JWT_SECRET=replace_with_a_strong_random_secret
+```sh
+npm install -D @types/node
 ```
 
-Where this is used:
+## Driver Extensions
 
-- `server.js` reads `MONGO_URI` and connects via `mongoose.connect(...)` before starting Express.
-- `scripts/seed.js` also reads `MONGO_URI` to insert sample products.
+The MongoDB driver can optionally be enhanced by the following feature packages:
 
-### 4) Connect to MongoDB
+Maintained by MongoDB:
 
-You can use either a local MongoDB instance or MongoDB Atlas (cloud).
+- Zstd network compression - [@mongodb-js/zstd](https://github.com/mongodb-js/zstd)
+- MongoDB field level and queryable encryption - [mongodb-client-encryption](https://github.com/mongodb/libmongocrypt#readme)
+- GSSAPI / SSPI / Kerberos authentication - [kerberos](https://github.com/mongodb-js/kerberos)
 
-#### Option A: Local MongoDB (Windows)
+Some of these packages include native C++ extensions.
+Consult the [trouble shooting guide here](https://github.com/mongodb/node-mongodb-native/blob/HEAD/etc/notes/native-extensions.md) if you run into compilation issues.
 
-1. Install MongoDB Community Server from the official MongoDB website.
-2. Ensure the MongoDB service is running (default port 27017).
-3. (Optional) Install MongoDB Compass to view your data.
-4. Set in `.env`:
-   ```env
-   MONGO_URI=mongodb://127.0.0.1:27017/fitfuel
-   ```
+Third party:
 
-#### Option B: MongoDB Atlas
+- Snappy network compression - [snappy](https://github.com/Brooooooklyn/snappy)
+- AWS authentication - [@aws-sdk/credential-providers](https://github.com/aws/aws-sdk-js-v3/tree/main/packages/credential-providers)
 
-1. Create a free cluster on MongoDB Atlas.
-2. Create a database user with username/password.
-3. Add your IP to the network access allowlist (0.0.0.0/0 for quick testing; restrict later).
-4. Copy the connection string (`mongodb+srv://...`).
-5. Set in `.env`:
-   ```env
-   MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/fitfuel
-   ```
+## Quick Start
 
-### 5) Run the Server
+This guide will show you how to set up a simple application using Node.js and MongoDB. Its scope is only how to set up the driver and perform the simple CRUD operations. For more in-depth coverage, see the [official documentation](https://www.mongodb.com/docs/drivers/node/).
+
+### Create the `package.json` file
+
+First, create a directory where your application will live.
 
 ```bash
-npm run dev
+mkdir myProject
+cd myProject
 ```
 
-- On success, you should see `Connected to MongoDB` in the console.
-- Health check: open `http://localhost:5000/api/ping`.
-
-### 6) Seed Sample Data (Optional)
-
-To quickly populate `Product` documents for testing:
+Enter the following command and answer the questions to create the initial structure for your new project:
 
 ```bash
-npm run seed
+npm init -y
 ```
 
-This runs `scripts/seed.js`, which clears existing products and inserts a small sample set.
+Next, install the driver as a dependency.
 
-### 7) Test API Endpoints
-
-Common routes (see `routes/` and `server.js`):
-
-- Auth
-  - `POST /api/auth/register` — `{ name, email, password }`
-  - `POST /api/auth/login` — `{ email, password }` → `{ token, user }`
-- Products
-  - `GET /api/products` — query with `?search=` and/or `?category=`
-- Cart (requires `Authorization: Bearer <token>`)
-  - `GET /api/cart`
-  - `POST /api/cart/add` — `{ productId, quantity }`
-- Health check
-  - `GET /api/ping`
-
-Use a tool like Postman, Insomnia, or curl to invoke endpoints.
-
-### 8) Available Scripts
-
-- `npm run dev` — start server in development mode
-- `npm start` — start server in production mode
-- `npm run seed` — seed sample products into MongoDB
-
-### 9) Troubleshooting
-
-- Connection refused / timeouts
-  - Local: ensure MongoDB Windows service is running and listening on `27017`.
-  - Atlas: verify IP allowlist, credentials, and that the cluster is in a ready state.
-- Auth errors (Atlas)
-  - Re-check username/password in `MONGO_URI` and user’s database permissions.
-- DNS/SRV issues for `mongodb+srv://`
-  - Ensure internet/DNS are working. Consider using the standard (non-SRV) connection string provided by Atlas.
-- TLS/SSL errors
-  - Use the default Atlas URI parameters; avoid altering TLS options unless required.
-
-### 10) Project Structure (Backend Highlights)
-
-```
-Fitfuel-project-main/
-├── models/             # Mongoose models (User, Product, CartItem, WishlistItem, Order)
-├── routes/             # Express routes (auth, products, cart, wishlist, orders, users)
-├── scripts/
-│   └── seed.js         # Seed script for Product data
-├── server.js           # App entry; loads env, connects MongoDB, mounts routes
-├── .env.example        # Environment template
-└── README.md           # You are here
+```bash
+npm install mongodb
 ```
 
-If you get stuck, share your `.env` (without secrets) and logs from the terminal for targeted help.
+### Start a MongoDB Server
+
+For complete MongoDB installation instructions, see [the manual](https://www.mongodb.com/docs/manual/installation/).
+
+1. Download the right MongoDB version from [MongoDB](https://www.mongodb.org/downloads)
+2. Create a database directory (in this case under **/data**).
+3. Install and start a `mongod` process.
+
+```bash
+mongod --dbpath=/data
+```
+
+You should see the **mongod** process start up and print some status information.
+
+### Connect to MongoDB
+
+Create a new **app.js** file and add the following code to try out some basic CRUD
+operations using the MongoDB driver.
+
+Add code to connect to the server and the database **myProject**:
+
+> **NOTE:** Resolving DNS Connection issues
+>
+> Node.js 18 changed the default DNS resolution ordering from always prioritizing IPv4 to the ordering
+> returned by the DNS provider. In some environments, this can result in `localhost` resolving to
+> an IPv6 address instead of IPv4 and a consequent failure to connect to the server.
+>
+> This can be resolved by:
+>
+> - specifying the IP address family using the MongoClient `family` option (`MongoClient(<uri>, { family: 4 } )`)
+> - launching mongod or mongos with the ipv6 flag enabled ([--ipv6 mongod option documentation](https://www.mongodb.com/docs/manual/reference/program/mongod/#std-option-mongod.--ipv6))
+> - using a host of `127.0.0.1` in place of localhost
+> - specifying the DNS resolution ordering with the `--dns-resolution-order` Node.js command line argument (e.g. `node --dns-resolution-order=ipv4first`)
+
+```js
+const { MongoClient } = require('mongodb');
+// or as an es module:
+// import { MongoClient } from 'mongodb'
+
+// Connection URL
+const url = 'mongodb://localhost:27017';
+const client = new MongoClient(url);
+
+// Database Name
+const dbName = 'myProject';
+
+async function main() {
+  // Use connect method to connect to the server
+  await client.connect();
+  console.log('Connected successfully to server');
+  const db = client.db(dbName);
+  const collection = db.collection('documents');
+
+  // the following code examples can be pasted here...
+
+  return 'done.';
+}
+
+main()
+  .then(console.log)
+  .catch(console.error)
+  .finally(() => client.close());
+```
+
+Run your app from the command line with:
+
+```bash
+node app.js
+```
+
+The application should print **Connected successfully to server** to the console.
+
+### Insert a Document
+
+Add to **app.js** the following function which uses the **insertMany**
+method to add three documents to the **documents** collection.
+
+```js
+const insertResult = await collection.insertMany([{ a: 1 }, { a: 2 }, { a: 3 }]);
+console.log('Inserted documents =>', insertResult);
+```
+
+The **insertMany** command returns an object with information about the insert operations.
+
+### Find All Documents
+
+Add a query that returns all the documents.
+
+```js
+const findResult = await collection.find({}).toArray();
+console.log('Found documents =>', findResult);
+```
+
+This query returns all the documents in the **documents** collection.
+If you add this below the insertMany example, you'll see the documents you've inserted.
+
+### Find Documents with a Query Filter
+
+Add a query filter to find only documents which meet the query criteria.
+
+```js
+const filteredDocs = await collection.find({ a: 3 }).toArray();
+console.log('Found documents filtered by { a: 3 } =>', filteredDocs);
+```
+
+Only the documents which match `'a' : 3` should be returned.
+
+### Update a document
+
+The following operation updates a document in the **documents** collection.
+
+```js
+const updateResult = await collection.updateOne({ a: 3 }, { $set: { b: 1 } });
+console.log('Updated documents =>', updateResult);
+```
+
+The method updates the first document where the field **a** is equal to **3** by adding a new field **b** to the document set to **1**. `updateResult` contains information about whether there was a matching document to update or not.
+
+### Remove a document
+
+Remove the document where the field **a** is equal to **3**.
+
+```js
+const deleteResult = await collection.deleteMany({ a: 3 });
+console.log('Deleted documents =>', deleteResult);
+```
+
+### Index a Collection
+
+[Indexes](https://www.mongodb.com/docs/manual/indexes/) can improve your application's
+performance. The following function creates an index on the **a** field in the
+**documents** collection.
+
+```js
+const indexName = await collection.createIndex({ a: 1 });
+console.log('index name =', indexName);
+```
+
+For more detailed information, see the [indexing strategies page](https://www.mongodb.com/docs/manual/applications/indexes/).
+
+## Error Handling
+
+If you need to filter certain errors from our driver, we have a helpful tree of errors described in [etc/notes/errors.md](https://github.com/mongodb/node-mongodb-native/blob/HEAD/etc/notes/errors.md).
+
+It is our recommendation to use `instanceof` checks on errors and to avoid relying on parsing `error.message` and `error.name` strings in your code.
+We guarantee `instanceof` checks will pass according to semver guidelines, but errors may be sub-classed or their messages may change at any time, even patch releases, as we see fit to increase the helpfulness of the errors.
+
+Any new errors we add to the driver will directly extend an existing error class and no existing error will be moved to a different parent class outside of a major release.
+This means `instanceof` will always be able to accurately capture the errors that our driver throws.
+
+```typescript
+const client = new MongoClient(url);
+await client.connect();
+const collection = client.db().collection('collection');
+
+try {
+  await collection.insertOne({ _id: 1 });
+  await collection.insertOne({ _id: 1 }); // duplicate key error
+} catch (error) {
+  if (error instanceof MongoServerError) {
+    console.log(`Error worth logging: ${error}`); // special case for some reason
+  }
+  throw error; // still want to crash
+}
+```
+
+## Nightly releases
+
+If you need to test with a change from the latest `main` branch, our `mongodb` npm package has nightly versions released under the `nightly` tag.
+
+```sh
+npm install mongodb@nightly
+```
+
+Nightly versions are published regardless of testing outcome.
+This means there could be semantic breakages or partially implemented features.
+The nightly build is not suitable for production use.
+
+## Next Steps
+
+- [MongoDB Documentation](https://www.mongodb.com/docs/manual/)
+- [MongoDB Node Driver Documentation](https://www.mongodb.com/docs/drivers/node/)
+- [Read about Schemas](https://www.mongodb.com/docs/manual/core/data-modeling-introduction/)
+- [Star us on GitHub](https://github.com/mongodb/node-mongodb-native)
+
+## License
+
+[Apache 2.0](LICENSE.md)
+
+© 2012-present MongoDB [Contributors](https://github.com/mongodb/node-mongodb-native/blob/HEAD/CONTRIBUTORS.md) \
+© 2009-2012 Christian Amor Kvalheim
