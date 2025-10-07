@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart | FitFuel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>FitFuel</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="products.html">Products</a>
+      <a href="lab-reports.html">Lab Reports</a>
+      <a href="login.html">Login</a>
+    </nav>
+  </header>
+
+  <main class="cart-container">
+    <section class="cart-header">
+      <h2>Your Cart (<span id="cart-count">0</span>)</h2>
+    </section>
+
+    <section class="cart-content">
+      <div id="cart-empty" class="cart-empty" style="display:none;">
+        <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png" alt="Empty cart" />
+        <h3>Your cart is empty</h3>
+        <p>Looks like you haven't added anything yet.</p>
+        <a class="btn secondary" href="products.html">Browse Products</a>
+      </div>
+
+      <div id="cart-list" class="cart-list"></div>
+
+      <aside class="cart-summary-card">
+        <h3>Order Summary</h3>
+        <div class="summary-row"><span>Subtotal</span><span id="subtotal">₹0</span></div>
+        <div class="summary-row"><span>Shipping</span><span id="shipping">₹0</span></div>
+        <div class="summary-total"><span>Total</span><span id="grand-total">₹0</span></div>
+        <button id="checkout-btn" class="btn" style="width:100%; margin-top: 12px;">Checkout</button>
+      </aside>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 FitFuel. All rights reserved.</p>
+  </footer>
+
+  <script src="cart.js"></script>
+</body>
+</html>
+

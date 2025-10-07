@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wishlist - FitFuel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="app.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Navbar -->
+  <header class="bg-white shadow-sm">
+    <div class="container mx-auto flex justify-between items-center py-4 px-6">
+      <a href="index.html" class="text-2xl font-bold text-indigo-600">FitFuel</a>
+      <nav class="space-x-6">
+        <a href="index.html" class="hover:text-indigo-600">Home</a>
+        <a href="wishlist.html" class="font-semibold text-indigo-600">Wishlist</a>
+        <a href="cart.html" class="hover:text-indigo-600">Cart</a>
+        <a href="login.html" class="hover:text-indigo-600">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page Title -->
+  <div class="container mx-auto py-6 px-6">
+    <h1 class="text-2xl font-bold mb-6">My Wishlist</h1>
+
+    <!-- Wishlist Items -->
+    <div id="wishlist-items" class="space-y-6"></div>
+  </div>
+
+  <script>
+    const wishlistContainer = document.getElementById('wishlist-items');
+
+    async function renderWishlist() {
+      wishlistContainer.innerHTML = '';
+      try {
+        const token = getToken();
+        let items = [];
+        if (token) {
+          const data = await apiGetWishlist();
+          items = (data || []).map(w => ({
+            productId: w.productId?._id,
+            name: w.productId?.name || 'Product',
+            price: w.productId?.price || 0,
+            image: (w.productId?.images && w.productId.images[0]) || 'https://via.placeholder.com/120x120',
+          }));
+        } else {
+          items = JSON.parse(localStorage.getItem('fitfuel_wishlist')) || [];
+        }
+
+        if (!items.length) {
+          wishlistContainer.innerHTML = "<p class='text-gray-600'>Your wishlist is empty.</p>";
+          return;
+        }
+
+        items.forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center bg-white shadow rounded-lg p-4';
+          div.innerHTML = `
+            <img src="${item.image}" alt="${item.name}" class="w-28 h-28 object-contain">
+            <div class="flex-1 ml-6">
+              <h2 class="text-lg font-semibold">${item.name}</h2>
+              <p class="text-xl font-bold mt-2">₹${item.price}</p>
+              <div class="mt-3 flex items-center gap-4">
+                <button class="text-indigo-600 font-medium hover:underline" data-action="move">🛒 Move to Cart</button>
+                <button class="text-red-500 hover:text-red-700" data-action="remove">🗑 Remove</button>
+              </div>
+            </div>`;
+          div.querySelector('[data-action="move"]').addEventListener('click', async () => {
+            const token = getToken();
+            if (token && item.productId) {
+              await addToCart(item.name, item.price, item.image, item.productId, 1);
+              await apiRemoveWishlist(item.productId);
+              renderWishlist();
+              alert('Moved to cart!');
+            } else {
+              const cart = JSON.parse(localStorage.getItem('fitfuel_cart')) || [];
+              cart.push(item);
+              localStorage.setItem('fitfuel_cart', JSON.stringify(cart));
+              let wl = JSON.parse(localStorage.getItem('fitfuel_wishlist')) || [];
+              wl.splice(idx, 1);
+              localStorage.setItem('fitfuel_wishlist', JSON.stringify(wl));
+              renderWishlist();
+              alert('Moved to cart!');
+            }
+          });
+          div.querySelector('[data-action="remove"]').addEventListener('click', async () => {
+            const token = getToken();
+            if (token && item.productId) {
+              await apiRemoveWishlist(item.productId);
+            } else {
+              let wl = JSON.parse(localStorage.getItem('fitfuel_wishlist')) || [];
+              wl.splice(idx, 1);
+              localStorage.setItem('fitfuel_wishlist', JSON.stringify(wl));
+            }
+            renderWishlist();
+          });
+          wishlistContainer.appendChild(div);
+        });
+      } catch (e) {
+        wishlistContainer.innerHTML = "<p class='text-red-600'>Failed to load wishlist.</p>";
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', renderWishlist);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Orders • FitFuel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="app.js"></script>
+  <style>
+    /* Animated extending line between steps */
+    .ff-connector { position: relative; flex: 1 1 auto; height: 2px; background: #e5e7eb; border-radius: 2px; }
+    .ff-connector .ff-fill { position: absolute; inset: 0 auto 0 0; height: 2px; width: 0; background: #34d399; border-radius: 2px; animation: ffGrow 900ms ease-out forwards; }
+    @keyframes ffGrow { to { width: 100%; } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-md p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-indigo-600">FitFuel</h1>
+    <nav class="flex items-center space-x-6">
+      <a href="index.html" class="hover:text-indigo-600">Home</a>
+      <a href="products.html" class="hover:text-indigo-600">Products</a>
+      <a href="wallet.html" class="hover:text-indigo-600">Wallet</a>
+      <a href="orders.html" class="text-indigo-600 font-semibold">My Orders</a>
+      <a id="auth-login-link" href="login.html" class="hover:text-indigo-600">Login</a>
+      <span id="auth-user-name" class="text-sm text-gray-600"></span>
+      <a id="auth-logout-link" href="#" onclick="logout()" style="display:none" class="hover:text-indigo-600">Logout</a>
+    </nav>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4">
+    <h2 class="text-2xl font-semibold mt-6 mb-4">My Orders</h2>
+
+    <div id="orders-container" class="space-y-4"></div>
+
+    <div id="empty-state" class="hidden text-center py-16">
+      <p class="text-gray-600 mb-4">You have no orders yet.</p>
+      <a href="products.html" class="inline-block bg-indigo-600 text-white px-4 py-2 rounded">Shop Now</a>
+    </div>
+  </main>
+
+  <!-- Order Details Modal -->
+  <div id="order-modal" class="fixed inset-0 bg-black/50 items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-semibold">Order Details</h3>
+        <button id="order-modal-close" class="text-gray-600 hover:text-black">✕</button>
+      </div>
+      <div id="order-modal-body" class="space-y-4 text-sm"></div>
+    </div>
+  </div>
+
+  <script>
+    // UI timeline: hide 'placed', start from 'packed'
+    const STATUS_STEPS = ['packed','shipped','out_for_delivery','delivered'];
+    function displayStatus(status) {
+      const raw = String(status || '').toLowerCase().replace(/\s+/g,'_');
+      // Treat 'placed' as 'packed' in UI
+      return raw === 'placed' ? 'packed' : raw;
+    }
+    function statusIndex(status) {
+      const s = displayStatus(status);
+      const i = STATUS_STEPS.indexOf(s);
+      return i >= 0 ? i : 0;
+    }
+
+    function formatDate(d) {
+      try { return new Date(d).toLocaleString(); } catch { return String(d || ''); }
+    }
+
+    function renderTimeline(currentStatus) {
+      const idx = statusIndex(currentStatus);
+      return `
+        <ol class="flex items-center w-full text-xs text-gray-600">
+          ${STATUS_STEPS.map((s,i) => `
+            <li class="flex-1 flex items-center gap-2">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full ${i<=idx?'bg-green-600 text-white animate-pulse':'bg-gray-200 text-gray-600'}">${i+1}</span>
+              <span class="capitalize">${s.replaceAll('_',' ')}</span>
+              ${i < STATUS_STEPS.length-1 ? `<span class=\"ff-connector\">${i<idx?'<span class=\"ff-fill\"></span>':''}</span>`:''}
+            </li>
+          `).join('')}
+        </ol>
+      `;
+    }
+
+    function readyToShipBanner(currentStatus) {
+      const s = String(currentStatus||'').toLowerCase().replace(/\s+/g,'_');
+      if (s === 'placed' || s === 'packed') {
+        return `
+          <div class="mt-2 flex items-center gap-2 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-3 py-2 animate-pulse">
+            <span>🚚</span>
+            <span>Order is ready for shipping</span>
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    // Normalize various orders API shapes
+    function normalizeOrders(raw) {
+      if (Array.isArray(raw)) return raw;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      return [];
+    }
+
+    function money(n) { try { return `₹${Number(n).toFixed(2)}`; } catch { return `₹${n}`; } }
+
+    // Render a single order card
+    function renderOrderCard(o) {
+      const id = o.orderNumber || o._id || '';
+      const oid = o._id || '';
+      const onum = o.orderNumber || '';
+      const items = Array.isArray(o.items) ? o.items : (Array.isArray(o.orderItems) ? o.orderItems : []);
+      const total = o.totalAmount || o.total || 0;
+      const status = o.status || 'placed';
+      const rawStatus = String(status).toLowerCase();
+      const uiStatus = displayStatus(status);
+      const created = o.createdAt || o.date || Date.now();
+
+      const productsHtml = items.map(it => {
+        const qty = it.quantity || it.qty || 1;
+        const price = it.priceSnapshot || it.price || 0;
+        const name = it.name || (it.product && it.product.name) || 'Product';
+        const img = (it.image) || (it.product && it.product.images && it.product.images[0]) || 'https://placehold.co/80x80?text=Item';
+        return `
+          <div class="flex items-center gap-3">
+            <img src="${img}" class="w-16 h-16 object-cover rounded" alt="${name}">
+            <div>
+              <div class="font-medium">${name}</div>
+              <div class="text-sm text-gray-600">Qty: ${qty} · ${money(price)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-start flex-wrap gap-3">
+            <div>
+              <div class="text-sm text-gray-600">Order ID</div>
+              <div class="font-semibold">${id}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Placed on</div>
+              <div class="font-semibold">${formatDate(created)}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Total</div>
+              <div class="font-semibold">${money(total)}</div>
+            </div>
+            <div>
+              ${rawStatus==='placed' ? '' : `<span class="text-xs px-2 py-1 rounded ${uiStatus==='delivered'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}">${uiStatus.replaceAll('_',' ').toUpperCase()}</span>`}
+            </div>
+          </div>
+
+          <div class="mt-4">${renderTimeline(status)}${readyToShipBanner(status)}</div>
+
+          <div class="mt-4 grid gap-3 md:grid-cols-2">
+            ${productsHtml || '<div class="text-gray-500">No items</div>'}
+          </div>
+
+          <div class="mt-4 flex gap-2 items-center">
+            <button class="border px-3 py-1 rounded text-sm btn-view" data-id="${oid}" data-oid="${oid}" data-onum="${onum}">View Details</button>
+            <span class="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 hidden tracking-badge" data-id="${id}">Tracking active</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Simple shim: make wireForOrderButton call existing wireForOrder(orderId)
+    function wireForOrderButton(viewBtn) {
+      if (!viewBtn) return;
+      const id = viewBtn.getAttribute('data-id');
+      if (id && typeof window.wireForOrder === 'function') window.wireForOrder(id);
+    }
+    try { window.wireForOrderButton = wireForOrderButton; } catch {}
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      updateAuthHeader();
+      const container = document.getElementById('orders-container');
+      const empty = document.getElementById('empty-state');
+      try {
+        const data = await apiListOrders();
+        const orders = normalizeOrders(data);
+        // Keep a lookup map for fallback rendering if single-order fetch fails
+        const ordersMap = new Map(orders.map(o => [String(o._id||o.id||''), o]));
+        const isValidObjectId = (v) => /^[a-f\d]{24}$/i.test(String(v||''));
+        if (!orders.length) {
+          empty.classList.remove('hidden');
+          return;
+        }
+        container.innerHTML = orders.map(renderOrderCard).join('');
+        // wire buttons
+        const trackers = new Map(); // orderId -> intervalId
+        const lastStatus = new Map(); // orderId -> last known status
+
+        async function refreshOrderCard(orderId) {
+          try {
+            const o = await authFetch(`/orders/${orderId}`);
+            const cards = Array.from(container.children);
+            const idx = cards.findIndex(el => el.innerHTML.includes(orderId));
+            if (idx >= 0) {
+              cards[idx].outerHTML = renderOrderCard(o);
+              // rewire buttons for this card
+              const btn = container.querySelector(`.btn-view[data-id="${o.orderNumber || o._id || orderId}"]`);
+              if (btn) { try { wireForOrderButton(btn); } catch {} }
+            }
+          } catch {}
+        }
+
+        function startTracking(orderId) {
+          if (trackers.has(orderId)) return;
+          const badge = container.querySelector(`.tracking-badge[data-id="${orderId}"]`);
+          if (badge) badge.classList.remove('hidden');
+          const iv = setInterval(async () => {
+            try {
+              const o = await authFetch(`/orders/${orderId}`);
+              refreshOrderCard(orderId);
+              const s = String(o.status || '').toLowerCase();
+              const prev = lastStatus.get(orderId);
+              if (prev && prev !== s) {
+                try { showToast && showToast(`Order ${orderId} status: ${prev.replaceAll('_',' ')} → ${s.replaceAll('_',' ')}`); } catch {}
+              }
+              lastStatus.set(orderId, s);
+              if (s === 'delivered' || s === 'cancelled') {
+                stopTracking(orderId);
+              }
+            } catch {}
+          }, 10000); // poll every 10s
+          trackers.set(orderId, iv);
+        }
+
+        function stopTracking(orderId) {
+          if (!trackers.has(orderId)) return;
+          clearInterval(trackers.get(orderId));
+          trackers.delete(orderId);
+          const badge = container.querySelector(`.tracking-badge[data-id="${orderId}"]`);
+          if (badge) badge.classList.add('hidden');
+        }
+
+        function openModal(html) {
+          const modal = document.getElementById('order-modal');
+          const body = document.getElementById('order-modal-body');
+          body.innerHTML = html;
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+        function closeModal() {
+          const modal = document.getElementById('order-modal');
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+        document.getElementById('order-modal-close').addEventListener('click', closeModal);
+
+        // Remove an order card from the list by id displayed on button data-id
+        function removeOrderCard(orderId) {
+          const cards = Array.from(container.children);
+          const idx = cards.findIndex(el => el.querySelector(`.btn-view[data-id="${orderId}"]`));
+          if (idx >= 0) { cards[idx].remove(); }
+          if (container.children.length === 0) {
+            empty.classList.remove('hidden');
+          }
+        }
+
+        // Unified cancel handler: warns once, tries API, then removes card from UI
+        async function handleCancelOrder(apiId) {
+          try {
+            if (!confirm('Cancel this order? This action cannot be undone.')) return;
+            try {
+              await authFetch(`/orders/${apiId}/cancel`, { method: 'PATCH' });
+            } catch (e) {
+              // If backend route is missing, still proceed to remove from UI
+              console.warn('Cancel API failed, removing locally:', e && e.message);
+            }
+            try { showToast && showToast('Order cancelled'); } catch {}
+            closeModal();
+            removeOrderCard(apiId);
+          } catch (e) {
+            alert(e.message || 'Unable to cancel order');
+          }
+        }
+
+        // Proper button wiring that works with orderNumber or _id
+        window.wireForOrderButton = function(viewBtn) {
+          if (!viewBtn) return;
+          const orderId = viewBtn.getAttribute('data-id') || '';
+          const oid = viewBtn.getAttribute('data-oid') || '';
+          const onum = viewBtn.getAttribute('data-onum') || '';
+          const apiId = oid || onum || orderId;
+          viewBtn.addEventListener('click', async () => {
+            try {
+              if (!apiId) throw new Error('invalid id');
+              const o = await authFetch(`/orders/${apiId}`);
+              const items = Array.isArray(o.items) ? o.items : [];
+              const track = o.tracking || {};
+              const st = String(o.status || '').toLowerCase();
+              const canCancel = !['shipped','out_for_delivery','delivered','cancelled'].includes(st);
+              const details = `
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-500">Order ID</div>
+                    <div class="font-medium">${o._id}</div>
+                  </div>
+                  <div>
+                    <div class="text-sm text-gray-500">Status</div>
+                    <div class="font-medium capitalize">${String(o.status||'').replaceAll('_',' ')}</div>
+                  </div>
+                </div>
+                <div class="mt-3">${renderTimeline(o.status)}${readyToShipBanner(o.status)}</div>
+                <div class="mt-4">
+                  <div class="text-sm text-gray-600 mb-1">Items</div>
+                  <div class="grid md:grid-cols-2 gap-3">
+                    ${items.map(it => `
+                      <div class=\"flex items-center gap-3 border rounded p-2\">
+                        <img src=\"${(it.image) || 'https://placehold.co/64x64?text=Item'}\" class=\"w-14 h-14 object-cover rounded\" />
+                        <div>
+                          <div class=\"font-medium\">${it.name}</div>
+                          <div class=\"text-xs text-gray-600\">Qty: ${it.quantity} · ₹${(it.priceSnapshot||it.price||0)}</div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                <div class=\"mt-4 grid md:grid-cols-3 gap-3 text-sm\">
+                  <div>
+                    <div class=\"text-gray-500\">Carrier</div>
+                    <div class=\"font-medium\">${track.carrier || '-'}</div>
+                  </div>
+                  <div>
+                    <div class=\"text-gray-500\">Tracking #</div>
+                    <div class=\"font-medium\">${track.trackingNumber || '-'}</div>
+                  </div>
+                  <div>
+                    <div class=\"text-gray-500\">ETA</div>
+                    <div class=\"font-medium\">${track.estimatedDelivery ? formatDate(track.estimatedDelivery) : (o.estimatedDelivery ? formatDate(o.estimatedDelivery) : '-')}</div>
+                  </div>
+                </div>
+              `;
+              openModal(details);
+              // Wire modal buttons
+              const tBtn = document.querySelector('.btn-modal-track[data-id="'+apiId+'"]');
+              const sBtn = document.querySelector('.btn-modal-stop[data-id="'+apiId+'"]');
+              const cBtn = document.querySelector('.btn-cancel[data-id="'+apiId+'"]');
+              function setModalTrack(on) { if (!tBtn||!sBtn) return; tBtn.classList.toggle('hidden', on); sBtn.classList.toggle('hidden', !on); }
+              if (trackers.has(apiId)) setModalTrack(true);
+              tBtn && tBtn.addEventListener('click', () => { startTracking(apiId); setModalTrack(true); });
+              sBtn && sBtn.addEventListener('click', () => { stopTracking(apiId); setModalTrack(false); });
+              cBtn && cBtn.addEventListener('click', () => handleCancelOrder(apiId));
+            } catch (e) {
+              console.error('View details failed, falling back to cached order', e);
+              const o = ordersMap.get(String(oid)) || ordersMap.get(String(onum)) || ordersMap.get(String(orderId));
+              if (!o) { alert(e && e.message ? e.message : 'Failed to load order details'); return; }
+              const items = Array.isArray(o.items) ? o.items : [];
+              const track = o.tracking || {};
+              const details = `
+                <div class=\"mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2\">Live details could not be loaded; showing cached order data.</div>
+                <div class=\"mt-4\"><div class=\"text-sm text-gray-600 mb-1\">Items</div><div class=\"grid md:grid-cols-2 gap-3\">${items.map(it=>`<div class=\\\"flex items-center gap-3 border rounded p-2\\\"><img src=\\\"${(it.image)||'https://placehold.co/64x64?text=Item'}\\\" onerror=\\\"this.onerror=null;this.src='https://placehold.co/64x64?text=Item'\\\" class=\\\"w-14 h-14 object-cover rounded\\\" /><div><div class=\\\"font-medium\\\">${it.name}</div><div class=\\\"text-xs text-gray-600\\\">Qty: ${it.quantity} · ₹${(it.priceSnapshot||it.price||0)}</div></div></div>`).join('')}</div></div>`;
+              openModal(details);
+            }
+          });
+        };
+
+        function wireForOrder(orderId) {
+          const viewBtn = container.querySelector(`.btn-view[data-id="${orderId}"]`);
+          if (!viewBtn) return;
+          viewBtn.addEventListener('click', async () => {
+            try {
+              if (!isValidObjectId(orderId)) throw new Error('non_api_id');
+              const o = await authFetch(`/orders/${orderId}`);
+              const items = Array.isArray(o.items) ? o.items : [];
+              const track = o.tracking || {};
+              const st = String(o.status || '').toLowerCase();
+              const canCancel = !['shipped','out_for_delivery','delivered','cancelled'].includes(st);
+              const details = `
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-500">Order ID</div>
+                    <div class="font-medium">${o._id}</div>
+                  </div>
+                  <div>
+                    <div class="text-sm text-gray-500">Status</div>
+                    <div class="font-medium capitalize">${String(o.status||'').replaceAll('_',' ')}</div>
+                  </div>
+                </div>
+                <div class="mt-3">${renderTimeline(o.status)}${readyToShipBanner(o.status)}</div>
+                <div class="mt-4">
+                  <div class="text-sm text-gray-600 mb-1">Items</div>
+                  <div class="grid md:grid-cols-2 gap-3">
+                    ${items.map(it => `
+                      <div class="flex items-center gap-3 border rounded p-2">
+                        <img src="${(it.image) || 'https://placehold.co/64x64?text=Item'}" class="w-14 h-14 object-cover rounded" />
+                        <div>
+                          <div class="font-medium">${it.name}</div>
+                          <div class="text-xs text-gray-600">Qty: ${it.quantity} · ₹${(it.priceSnapshot||it.price||0)}</div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                <div class="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <div class="text-gray-500">Carrier</div>
+                    <div class="font-medium">${track.carrier || '-'}</div>
+                  </div>
+                  <div>
+                    <div class="text-gray-500">Tracking #</div>
+                    <div class="font-medium">${track.trackingNumber || '-'}</div>
+                  </div>
+                  <div>
+                    <div class="text-gray-500">ETA</div>
+                    <div class="font-medium">${track.estimatedDelivery ? formatDate(track.estimatedDelivery) : (o.estimatedDelivery ? formatDate(o.estimatedDelivery) : '-')}</div>
+                  </div>
+                </div>
+                ${track.url ? `<div class=\"mt-2 text-sm\"><a class=\"text-indigo-600 underline\" href=\"${track.url}\" target=\"_blank\" rel=\"noreferrer\">Open tracking page</a></div>` : ''}
+                <div class=\"mt-4 flex gap-2 flex-wrap\">
+                  <button class=\"border px-3 py-1 rounded text-sm btn-modal-track\" data-id=\"${orderId}\">Track My Order</button>
+                  <button class=\"border px-3 py-1 rounded text-sm hidden btn-modal-stop\" data-id=\"${orderId}\">Stop Tracking</button>
+                  ${canCancel ? `<button class=\"border border-red-500 text-red-600 px-3 py-1 rounded text-sm btn-cancel\" data-id=\"${orderId}\">Cancel Order</button>` : ''}
+                </div>
+              `;
+              openModal(details);
+              // Wire modal buttons
+              const tBtn = document.querySelector('.btn-modal-track[data-id="'+orderId+'"]');
+              const sBtn = document.querySelector('.btn-modal-stop[data-id="'+orderId+'"]');
+              const cBtn = document.querySelector('.btn-cancel[data-id="'+orderId+'"]');
+              function setModalTrack(on) { if (!tBtn||!sBtn) return; tBtn.classList.toggle('hidden', on); sBtn.classList.toggle('hidden', !on); }
+              if (trackers.has(orderId)) setModalTrack(true);
+              // Disable tracking start if no valid API id
+              tBtn && tBtn.addEventListener('click', () => { if (!isValidObjectId(orderId)) { alert('Live tracking unavailable for this order'); return; } startTracking(orderId); setModalTrack(true); });
+              sBtn && sBtn.addEventListener('click', () => { stopTracking(orderId); setModalTrack(false); });
+              cBtn && cBtn.addEventListener('click', () => handleCancelOrder(orderId));
+            } catch (e) {
+              console.error('View details failed, falling back to cached order', e);
+              const o = ordersMap.get(String(orderId));
+              if (!o) { alert(e && e.message ? e.message : 'Failed to load order details'); return; }
+              const items = Array.isArray(o.items) ? o.items : [];
+              const track = o.tracking || {};
+              const st = String(o.status || '').toLowerCase();
+              const canCancel = isValidObjectId(orderId) && !['shipped','out_for_delivery','delivered','cancelled'].includes(st);
+              const details = `
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <div class="text-sm text-gray-500">Order ID</div>
+                    <div class="font-medium">${o._id || o.id}</div>
+                  </div>
+                  <div>
+                    <div class="text-sm text-gray-500">Status</div>
+                    <div class="font-medium capitalize">${String(o.status||'').replaceAll('_',' ')}</div>
+                  </div>
+                </div>
+                <div class="mt-3">${renderTimeline(o.status)}${readyToShipBanner(o.status)}</div>
+                <div class="mt-4">
+                  <div class="text-sm text-gray-600 mb-1">Items</div>
+                  <div class="grid md:grid-cols-2 gap-3">
+                    ${items.map(it => `
+                      <div class="flex items-center gap-3 border rounded p-2">
+                        <img src="${(it.image) || 'https://placehold.co/64x64?text=Item'}" class="w-14 h-14 object-cover rounded" />
+                        <div>
+                          <div class="font-medium">${it.name}</div>
+                          <div class="text-xs text-gray-600">Qty: ${it.quantity} · ₹${(it.priceSnapshot||it.price||0)}</div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                <div class="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <div class="text-gray-500">Carrier</div>
+                    <div class="font-medium">${track.carrier || '-'}</div>
+                  </div>
+                  <div>
+                    <div class="text-gray-500">Tracking #</div>
+                    <div class="font-medium">${track.trackingNumber || '-'}</div>
+                  </div>
+                  <div>
+                    <div class="text-gray-500">ETA</div>
+                    <div class="font-medium">${track.estimatedDelivery ? formatDate(track.estimatedDelivery) : (o.estimatedDelivery ? formatDate(o.estimatedDelivery) : '-')}</div>
+                  </div>
+                </div>
+                <div class="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">Live details could not be loaded; showing cached order data.</div>
+                <div class="mt-3 flex gap-2 flex-wrap">
+                  ${canCancel ? `<button class=\"border border-red-500 text-red-600 px-3 py-1 rounded text-sm btn-cancel\" data-id=\"${orderId}\">Cancel Order</button>` : ''}
+                </div>
+              `;
+              openModal(details);
+              const cBtn2 = document.querySelector('.btn-cancel[data-id="'+orderId+'"]');
+              if (cBtn2) cBtn2.addEventListener('click', () => handleCancelOrder(orderId));
+            }
+          });
+        }
+        try { window.wireForOrder = wireForOrder; } catch {}
+        // Expose for safety if other code references it later
+        try { window.wireForOrderButton = wireForOrderButton; } catch {}
+
+        // wire all existing cards
+        Array.from(container.querySelectorAll('.btn-view')).forEach(btn => { try { window.wireForOrderButton(btn); } catch (e) { console.error(e); } });
+      } catch (e) {
+        container.innerHTML = `<div class="text-red-600">Failed to load orders: ${e && e.message ? e.message : e}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

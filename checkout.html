@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | FitFuel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="app.js"></script>
+</head>
+<body class="bg-gray-50">
+
+  <header class="bg-white shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-xl font-bold text-indigo-600">FitFuel</h1>
+      <a href="cart.html" class="text-sm text-indigo-600">Back to Cart</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Order Summary -->
+    <aside class="lg:col-span-1 bg-white rounded-xl shadow p-4 h-max">
+      <h2 class="text-lg font-semibold mb-3">Order Summary</h2>
+      <div class="flex gap-3">
+        <div class="w-24 h-24 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+          <img id="product-img" src="" alt="Product" class="w-full h-full object-cover" />
+        </div>
+        <div class="flex-1">
+          <h3 id="product-name" class="font-medium line-clamp-2"></h3>
+          <div id="product-price" class="text-gray-700 mt-1"></div>
+          <div class="mt-2 flex items-center gap-2">
+            <label class="text-sm text-gray-600">Qty</label>
+            <input id="quantity" type="number" min="1" value="1" class="w-20 border rounded px-2 py-1" />
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 border-t pt-3 text-sm space-y-2">
+        <div class="flex justify-between"><span>Subtotal</span><span id="sum-sub">₹0</span></div>
+        <div class="flex justify-between"><span>Shipping</span><span id="sum-ship">₹0</span></div>
+        <div class="flex justify-between font-semibold text-lg"><span>Total</span><span id="total-amount">₹0</span></div>
+      </div>
+    </aside>
+
+    <!-- Details -->
+    <section class="lg:col-span-2 space-y-6">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h2 class="text-lg font-semibold mb-3">Shipping Address</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="addr-line" placeholder="Address line" class="border rounded px-3 py-2" />
+          <input id="addr-city" placeholder="City" class="border rounded px-3 py-2" />
+          <input id="addr-zip" placeholder="ZIP" class="border rounded px-3 py-2" />
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-5">
+        <h2 class="text-lg font-semibold mb-3">Payment Method</h2>
+        <div class="flex flex-wrap gap-4 text-sm">
+          <label class="flex items-center gap-2"> <input type="radio" name="pay" value="cod" checked /> Cash on Delivery </label>
+          <label class="flex items-center gap-2"> <input type="radio" name="pay" value="upi" /> UPI </label>
+          <label class="flex items-center gap-2"> <input type="radio" name="pay" value="card" /> Card </label>
+        </div>
+        <div id="pay-extra" class="mt-3 hidden">
+          <input id="upi-id" placeholder="yourname@upi" class="hidden w-full border rounded px-3 py-2" />
+          <div id="card-fields" class="hidden">
+            <input id="card-num" placeholder="Card Number" class="w-full border rounded px-3 py-2" />
+            <div class="flex gap-3 mt-2">
+              <input id="card-exp" placeholder="MM/YY" class="flex-1 border rounded px-3 py-2" />
+              <input id="card-cvv" placeholder="CVV" class="flex-1 border rounded px-3 py-2" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg shadow" onclick="placeOrder()">Place Order</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const product = JSON.parse(localStorage.getItem('buyNowProduct'));
+
+    function compute() {
+      const qty = parseInt(document.getElementById('quantity').value) || 1;
+      const sub = (product?.price || 0) * qty;
+      const ship = 0;
+      document.getElementById('sum-sub').textContent = `₹${sub}`;
+      document.getElementById('sum-ship').textContent = `₹${ship}`;
+      document.getElementById('total-amount').textContent = `₹${sub + ship}`;
+    }
+
+    if (product) {
+      document.getElementById('product-img').src = product.image || 'https://via.placeholder.com/120x120?text=Product';
+      document.getElementById('product-name').textContent = product.name;
+      document.getElementById('product-price').textContent = `Price: ₹${product.price}`;
+      document.getElementById('quantity').value = product.qty || 1;
+      compute();
+      document.getElementById('quantity').addEventListener('input', compute);
+    } else {
+      document.getElementById('product-name').textContent = 'No product selected';
+    }
+
+    async function placeOrder() {
+      const line = document.getElementById('addr-line').value.trim();
+      const city = document.getElementById('addr-city').value.trim();
+      const zip = document.getElementById('addr-zip').value.trim();
+      if (!line || !city || !zip) { alert('Please fill shipping address'); return; }
+      const qty = parseInt(document.getElementById('quantity').value) || 1;
+      const total = (product?.price || 0) * qty;
+      const method = (document.querySelector('input[name="pay"]:checked')?.value) || 'cod';
+      const token = getToken();
+      try {
+        if (token) {
+          const items = [{ productId: product.productId || product._id || null, name: product.name, price: product.price, quantity: qty }];
+          const order = await apiPlaceOrder({ items, total, address: { line, city, zip }, paymentMethod: method });
+          alert('✅ Order placed! Order ID: ' + order._id);
+        } else {
+          // Save guest order locally for history
+          const history = JSON.parse(localStorage.getItem('fitfuel_orders') || '[]');
+          history.push({ when: new Date().toISOString(), items: [{ name: product.name, price: product.price, qty }], total, address: { line, city, zip }, paymentMethod: method });
+          localStorage.setItem('fitfuel_orders', JSON.stringify(history));
+          alert(`✅ Order placed for ${qty} x ${product.name} (guest mode)`);
+        }
+      } catch (e) {
+        alert('Failed to place order: ' + (e.message || 'Unknown error'));
+        return;
+      }
+      localStorage.removeItem('buyNowProduct');
+      window.location.href = 'products.html';
+    }
+
+    // Payment method dynamic fields
+    const payRadios = document.querySelectorAll('input[name="pay"]');
+    const payExtra = document.getElementById('pay-extra');
+    const upiField = document.getElementById('upi-id');
+    const cardFields = document.getElementById('card-fields');
+    function refreshPayFields() {
+      const val = document.querySelector('input[name="pay"]:checked')?.value;
+      if (val === 'upi') {
+        payExtra.classList.remove('hidden');
+        upiField.classList.remove('hidden');
+        cardFields.classList.add('hidden');
+      } else if (val === 'card') {
+        payExtra.classList.remove('hidden');
+        upiField.classList.add('hidden');
+        cardFields.classList.remove('hidden');
+      } else {
+        payExtra.classList.add('hidden');
+        upiField.classList.add('hidden');
+        cardFields.classList.add('hidden');
+      }
+    }
+    payRadios.forEach(r => r.addEventListener('change', refreshPayFields));
+    refreshPayFields();
+  </script>
+
+</body>
+</html>

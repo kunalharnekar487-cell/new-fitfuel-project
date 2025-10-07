@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FitFuel - User Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="app.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Welcome, <span id="user-name"></span></h1>
+    <a href="#" onclick="logout()" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600">Logout</a>
+  </header>
+
+  <main class="max-w-5xl mx-auto mt-6 space-y-6">
+
+    <!-- Profile Overview -->
+    <section class="bg-white shadow-md rounded-lg p-4">
+      <h2 class="text-lg font-semibold mb-2">Profile Overview</h2>
+      <p><strong>Username:</strong> <span id="profile-username"></span></p>
+      <p><strong>Email:</strong> <span id="profile-email"></span></p>
+      <p><strong>Phone:</strong> <span id="profile-phone"></span></p>
+      <button class="mt-3 bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">Edit Profile</button>
+    </section>
+
+    <!-- Wallet Section -->
+    <section class="bg-white shadow-md rounded-lg p-4">
+      <h2 class="text-lg font-semibold mb-2">Your Wallet</h2>
+      <div id="wallet-section"></div>
+    </section>
+
+    <!-- Order History -->
+    <section class="bg-white shadow-md rounded-lg p-4">
+      <h2 class="text-lg font-semibold mb-2">Order History</h2>
+      <div id="order-history"></div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="bg-white shadow-md rounded-lg p-4">
+      <h2 class="text-lg font-semibold mb-2">Quick Actions</h2>
+      <div class="flex space-x-4">
+        <a href="cart.html" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Go to Cart</a>
+        <a href="wishlist.html" class="bg-pink-600 text-white px-3 py-1 rounded hover:bg-pink-700">Go to Wishlist</a>
+        <a href="products.html" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">Shop Now</a>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Get user data and redirect if not logged in
+    const user = JSON.parse(localStorage.getItem('fitfuel_user') || 'null');
+    if (!user) { window.location.href = 'login.html'; }
+
+    // Display profile
+    document.getElementById('user-name').innerText = user.name || user.username || 'User';
+    document.getElementById('profile-username').innerText = user.name || user.username || 'N/A';
+    document.getElementById('profile-email').innerText = user.email || 'Not Provided';
+    document.getElementById('profile-phone').innerText = user.phone || 'Not Provided';
+
+    // Wallet section (still local mock until wallet API exists)
+    const ffCash = user.ffCash || 0;
+    if (ffCash > 0) {
+      document.getElementById('wallet-section').innerHTML = `
+        <div class="p-3 bg-indigo-50 rounded border border-indigo-200">
+          <p class="text-xl font-bold text-indigo-600">₹${ffCash} FF Cash</p>
+          <p class="text-sm text-gray-600">Last Updated: ${user.lastUpdated || 'N/A'}</p>
+          <p class="text-sm text-gray-500 mt-1">Use your FF Cash on protein powders, gym gear, and more!</p>
+        </div>`;
+    } else {
+      document.getElementById('wallet-section').innerHTML = `
+        <div class="p-3 bg-gray-50 rounded border border-gray-200 text-gray-600">
+          You have no FF Cash yet. Start shopping to earn rewards!
+        </div>`;
+    }
+
+    // API-backed order history
+    async function loadOrders() {
+      const container = document.getElementById('order-history');
+      container.innerHTML = '<p class="text-gray-500">Loading...</p>';
+      try {
+        const orders = await apiListOrders();
+        if (!orders || orders.length === 0) {
+          container.innerHTML = '<p class="text-gray-600">No orders yet. Start shopping!</p>';
+          return;
+        }
+        const list = document.createElement('div');
+        list.className = 'space-y-3';
+        orders.forEach(o => {
+          const card = document.createElement('div');
+          card.className = 'border rounded p-3';
+          const date = new Date(o.createdAt).toLocaleString();
+          const itemsHtml = (o.items || []).map(i => `${i.name} x ${i.quantity} (₹${i.price})`).join(', ');
+          card.innerHTML = `
+            <div class="flex justify-between">
+              <div>
+                <div class="font-semibold">Order #${o._id}</div>
+                <div class="text-sm text-gray-600">${date}</div>
+              </div>
+              <div class="font-bold">₹${o.total}</div>
+            </div>
+            <div class="mt-1 text-sm">${itemsHtml}</div>
+            <div class="text-xs text-gray-500 mt-1">Status: ${o.status}</div>
+          `;
+          list.appendChild(card);
+        });
+        container.innerHTML = '';
+        container.appendChild(list);
+      } catch (e) {
+        container.innerHTML = '<p class="text-red-600">Failed to load orders.</p>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOrders);
+  </script>
+
+</body>
+</html>

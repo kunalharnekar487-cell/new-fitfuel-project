@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitFuel - Products</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="app.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-indigo-600">FitFuel</h1>
+    <nav class="flex items-center space-x-6">
+      <a href="index.html" class="hover:text-indigo-600">Home</a>
+      <a href="products.html" class="hover:text-indigo-600">Products</a>
+      <a href="lab-reports.html" class="hover:text-indigo-600">Lab Reports</a>
+      <a href="wallet.html" class="hover:text-indigo-600">Wallet</a>
+      <a href="orders.html" class="hover:text-indigo-600">My Orders</a>
+      <a href="wishlist.html" class="hover:text-indigo-600">Wishlist</a>
+      <a href="cart.html" class="hover:text-indigo-600 relative">Cart <span id="cart-count" class="absolute -top-2 -right-4 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">0</span></a>
+      <a id="auth-login-link" href="login.html" class="hover:text-indigo-600">Login</a>
+      <span id="auth-user-name" class="text-sm text-gray-600"></span>
+      <a id="auth-logout-link" href="#" onclick="logout()" style="display:none" class="hover:text-indigo-600">Logout</a>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto mt-8 p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <img id="p-img" src="c:\Users\sande\Downloads\Gemini_Generated_Image_702n5y702n5y702n.png" alt="Product" class="w-full h-80 object-cover rounded">
+      <div id="p-thumbs" class="mt-3 flex flex-wrap gap-2"></div>
+      <!-- Simple image editor: add/preview/save an image URL -->
+      <details class="mt-3 bg-white rounded border p-3 text-sm" id="img-editor">
+        <summary class="cursor-pointer font-medium">Add/Change product image (paste an image URL)</summary>
+        <div class="mt-2 flex flex-col gap-2">
+          <input id="img-url-input" type="url" placeholder="c:\Users\sande\Downloads\Gemini_Generated_Image_702n5y702n5y702n.png or /assets/images/product.jpg" class="border rounded px-2 py-1" />
+          <div class="flex gap-2 flex-wrap">
+            <button id="btn-img-preview" class="border px-3 py-1 rounded">Preview (does not save)</button>
+            <button id="btn-img-addthumb" class="border px-3 py-1 rounded">Add as extra image</button>
+            <button id="btn-img-save" class="bg-indigo-600 text-white px-3 py-1 rounded">Save to product</button>
+          </div>
+          <div class="text-xs text-gray-600">Save tries to update the product in the database. If your backend doesn't allow PATCH, the UI will still preview locally.</div>
+        </div>
+      </details>
+    </div>
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span id="p-category" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded hidden"></span>
+        <span id="p-stock" class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded hidden"></span>
+      </div>
+      <h2 id="p-name" class="text-2xl font-semibold mb-1">Loading...</h2>
+      <div id="p-rating" class="text-sm text-amber-600 mb-2 hidden"></div>
+      <p id="p-desc" class="text-gray-600 mb-3"></p>
+      <p class="text-xl font-bold">₹<span id="p-price">0</span></p>
+      <div class="mt-4 flex items-center space-x-3">
+        <input id="p-qty" type="number" min="1" value="1" class="w-20 border rounded px-2 py-1">
+        <button id="btn-add" class="bg-indigo-600 text-white px-4 py-2 rounded">Add to Cart</button>
+        <button id="btn-buy" class="border border-indigo-600 text-indigo-600 px-4 py-2 rounded">Buy Now</button>
+        <button id="btn-wish" class="border border-rose-500 text-rose-600 px-3 py-2 rounded">♡ Wishlist</button>
+      </div>
+    </div>
+  </main>
+
+  <section class="max-w-5xl mx-auto p-4 mt-4">
+    <h3 class="text-xl font-semibold mb-3">About the Product</h3>
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex gap-2 border-b pb-2 mb-3 text-sm">
+        <button id="tab-desc" class="px-3 py-1 rounded bg-indigo-600 text-white">Description</button>
+        <button id="tab-benefits" class="px-3 py-1 rounded hover:bg-gray-100">Key Benefits</button>
+        <button id="tab-nutri" class="px-3 py-1 rounded hover:bg-gray-100">Nutritional Information</button>
+      </div>
+      <div id="panel-desc" class="space-y-2"></div>
+      <div id="panel-benefits" class="space-y-2 hidden"></div>
+      <div id="panel-nutri" class="space-y-2 hidden"></div>
+    </div>
+
+    <!-- Why shop with us -->
+    <h3 class="text-xl font-semibold mt-8 mb-3">Why shop with FitFuel</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+      <div class="bg-white rounded shadow p-4 flex items-start gap-3">
+        <div class="text-2xl">✅</div>
+        <div>
+          <p class="font-semibold">Authentic, quality-checked</p>
+          <p class="text-gray-600">Sourced from trusted suppliers with clear nutrition and lab-report links.</p>
+        </div>
+      </div>
+      <div class="bg-white rounded shadow p-4 flex items-start gap-3">
+        <div class="text-2xl">⚡</div>
+        <div>
+          <p class="font-semibold">Fast delivery</p>
+          <p class="text-gray-600">Reliable shipping and real-time stock visibility.</p>
+        </div>
+      </div>
+      <div class="bg-white rounded shadow p-4 flex items-start gap-3">
+        <div class="text-2xl">🔒</div>
+        <div>
+          <p class="font-semibold">Secure payments</p>
+          <p class="text-gray-600">Multiple payment options with safe checkout.</p>
+        </div>
+      </div>
+      <div class="bg-white rounded shadow p-4 flex items-start gap-3">
+        <div class="text-2xl">💬</div>
+        <div>
+          <p class="font-semibold">Helpful support</p>
+          <p class="text-gray-600">We’re here to help with product and order queries.</p>
+        </div>
+      </div>
+      <div class="bg-white rounded shadow p-4 flex items-start gap-3">
+        <div class="text-2xl">↩️</div>
+        <div>
+          <p class="font-semibold">Easy returns</p>
+          <p class="text-gray-600">Simple return policies on eligible items.</p>
+        </div>
+      </div>
+      <div class="bg-white rounded shadow p-4 flex items-start gap-3">
+        <div class="text-2xl">🏋️</div>
+        <div>
+          <p class="font-semibold">Fitness-first catalog</p>
+          <p class="text-gray-600">Curated protein, performance, and wellness products.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Explore categories -->
+    <h3 class="text-xl font-semibold mt-8 mb-3">Explore Supplement Categories</h3>
+    <div class="bg-white rounded-lg shadow divide-y">
+      <details class="p-4" open>
+        <summary class="cursor-pointer font-semibold">Intra-Workout Supplements</summary>
+        <ul class="list-disc pl-6 mt-2 text-sm text-gray-700">
+          <li>BCAA (Branched-Chain Amino Acids)</li>
+          <li>EAA (Essential Amino Acids)</li>
+          <li>Electrolyte Mix</li>
+          <li>Glutamine</li>
+        </ul>
+      </details>
+      <details class="p-4">
+        <summary class="cursor-pointer font-semibold">Post-Workout Supplements</summary>
+        <ul class="list-disc pl-6 mt-2 text-sm text-gray-700">
+          <li>Creatine Monohydrate</li>
+          <li>L-Carnitine</li>
+          <li>Glutamine Recovery Powder</li>
+          <li>Protein Blends for Recovery</li>
+        </ul>
+      </details>
+      <details class="p-4">
+        <summary class="cursor-pointer font-semibold">Vitamins & Minerals</summary>
+        <ul class="list-disc pl-6 mt-2 text-sm text-gray-700">
+          <li>Multivitamins</li>
+          <li>Fish Oil (Omega-3)</li>
+          <li>Vitamin D3</li>
+          <li>Calcium & Magnesium</li>
+          <li>Zinc & Iron</li>
+        </ul>
+      </details>
+      <details class="p-4">
+        <summary class="cursor-pointer font-semibold">Performance & Endurance Boosters</summary>
+        <ul class="list-disc pl-6 mt-2 text-sm text-gray-700">
+          <li>Nitric Oxide Enhancers</li>
+          <li>Energy Drinks & Hydration Powders</li>
+          <li>Creatine HCL</li>
+          <li>Betaine</li>
+        </ul>
+      </details>
+      <details class="p-4">
+        <summary class="cursor-pointer font-semibold">Health & Wellness Supplements</summary>
+        <ul class="list-disc pl-6 mt-2 text-sm text-gray-700">
+          <li>Green Superfoods</li>
+          <li>Collagen Peptides</li>
+          <li>Probiotics</li>
+          <li>Fiber Supplements</li>
+          <li>Antioxidant Blends</li>
+        </ul>
+      </details>
+      <details class="p-4">
+        <summary class="cursor-pointer font-semibold">Meal Replacements & Nutrition</summary>
+        <ul class="list-disc pl-6 mt-2 text-sm text-gray-700">
+          <li>Oats & Muesli</li>
+          <li>Meal Replacement Shakes</li>
+          <li>Protein Smoothie Mixes</li>
+          <li>Energy Bars</li>
+        </ul>
+      </details>
+    </div>
+
+    <h3 class="text-xl font-semibold mt-8 mb-3">Related Products</h3>
+    <div id="related" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </section>
+
+  <script>
+    function getQueryId() {
+      const u = new URL(location.href);
+      return u.searchParams.get('id');
+    }
+
+    let product = null;
+    function buildExtendedDescription(p, baseDesc, benefits, nutri) {
+      const lines = [];
+      const name = p.name || 'This product';
+      const cat = (p.category || '').toUpperCase();
+      lines.push(`${name} is a premium ${p.category || 'fitness'} supplement crafted to support your daily training and wellness goals.`);
+      lines.push(baseDesc);
+      if (p.flavor) lines.push(`Flavor: ${p.flavor}. Smooth taste that mixes easily with water or milk.`);
+      if (p.servings) lines.push(`Each pack offers approximately ${p.servings} servings for consistent daily use.`);
+      if (Array.isArray(benefits) && benefits.length) lines.push(`Key benefits include: ${benefits.slice(0,3).join(', ')}.`);
+      if (nutri && (nutri.protein!=null || nutri.calories!=null)) {
+        const parts = [];
+        if (nutri.protein!=null) parts.push(`${nutri.protein} g protein`);
+        if (nutri.carbs!=null) parts.push(`${nutri.carbs} g carbs`);
+        if (nutri.fat!=null) parts.push(`${nutri.fat} g fat`);
+        if (nutri.calories!=null) parts.push(`${nutri.calories} kcal`);
+        if (parts.length) lines.push(`Typical per serving: ${parts.join(', ')}.`);
+      }
+      lines.push('Suggested use: Mix 1 serving with 200–250 ml cold water or milk. Consume post‑workout or between meals.');
+      lines.push('Quality: Made with carefully selected ingredients and processed in hygienic facilities.');
+      lines.push('Goal: Designed to help improve recovery, support lean muscle, and maintain daily protein intake.');
+      lines.push('Storage: Keep in a cool, dry place away from direct sunlight. Close the lid tightly after each use.');
+      lines.push('Allergen info: Contains/May contain ingredients derived from milk/soy depending on variant.');
+      return lines.slice(0,10).map(t => `<p class=\"text-gray-700 leading-relaxed\">${t}</p>`).join('');
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      updateCartCount();
+      const id = getQueryId();
+      if (!id) {
+        location.href = 'products.html';
+        return;
+      }
+      try {
+        product = await apiGetProduct(id);
+        const mainImgEl = document.getElementById('p-img');
+        let images = Array.isArray(product.images) ? product.images.slice() : [];
+        const img = (images[0]) || 'https://placehold.co/600x400?text=Product';
+        mainImgEl.src = img;
+        // Fallback for main image
+        mainImgEl.addEventListener('error', () => {
+          mainImgEl.src = 'https://placehold.co/600x400?text=Product';
+        }, { once: true });
+        // Build thumbnails
+        const thumbsWrap = document.getElementById('p-thumbs');
+        function renderThumbs() {
+          thumbsWrap.innerHTML = '';
+          const unique = images.filter((u,i,arr) => typeof u === 'string' && u && arr.indexOf(u) === i).slice(0, 8);
+          unique.forEach((url, idx) => {
+            const t = document.createElement('img');
+            t.src = url;
+            t.alt = `thumb-${idx+1}`;
+            t.className = 'w-20 h-16 object-cover rounded border cursor-pointer hover:opacity-80';
+            t.addEventListener('error', () => { t.src = 'https://placehold.co/120x90?text=Img'; }, { once: true });
+            t.addEventListener('click', () => { mainImgEl.src = url; });
+            thumbsWrap.appendChild(t);
+          });
+          if (unique.length === 0) {
+            const t = document.createElement('img');
+            t.src = 'https://placehold.co/120x90?text=Img';
+            t.className = 'w-20 h-16 object-cover rounded border opacity-60';
+            thumbsWrap.appendChild(t);
+          }
+        }
+        renderThumbs();
+        document.getElementById('p-name').textContent = product.name;
+        const fallbackDescByCat = {
+          protein: 'High-quality protein to support muscle growth and recovery.',
+          gainer: 'Calorie-dense formula for size and strength goals.',
+          amino: 'Amino acid support for training and recovery.',
+          preworkout: 'Energy and focus to power intense workouts.',
+          vitamin: 'Daily micronutrient support for overall wellness.',
+          health: 'General health support for active lifestyles.',
+          snack: 'Tasty, protein-rich snack for on-the-go nutrition.'
+        };
+        const desc = product.description && product.description.trim().length > 0
+          ? product.description
+          : (fallbackDescByCat[product.category] || 'Premium supplement for your fitness goals.');
+        document.getElementById('p-desc').textContent = desc;
+        // Category badge
+        if (product.category) {
+          const catEl = document.getElementById('p-category');
+          catEl.textContent = product.category.toUpperCase();
+          catEl.classList.remove('hidden');
+        }
+        // Stock badge
+        if (typeof product.stock === 'number') {
+          const stockEl = document.getElementById('p-stock');
+          stockEl.textContent = product.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK';
+          stockEl.classList.toggle('hidden', false);
+          stockEl.classList.toggle('bg-green-50', product.stock > 0);
+          stockEl.classList.toggle('text-green-700', product.stock > 0);
+        }
+        // Rating
+        if (typeof product.rating === 'number' && product.rating > 0) {
+          const rEl = document.getElementById('p-rating');
+          const stars = '★★★★★☆☆☆☆☆'.slice(5 - Math.round(Math.min(5, Math.max(0, product.rating))), 10);
+          rEl.textContent = `Rating: ${product.rating.toFixed(1)} / 5`;
+          rEl.classList.remove('hidden');
+        }
+        document.getElementById('p-price').textContent = product.price;
+        // Populate tabs
+        const benefitsFallback = {
+          protein: ['Supports muscle growth', 'Aids recovery', 'High-quality protein'],
+          gainer: ['High-calorie formula', 'Supports weight gain', 'Balanced macros'],
+          amino: ['Reduces muscle soreness', 'Supports endurance', 'Hydration support'],
+          preworkout: ['Boosts energy', 'Enhances focus', 'Improves pumps'],
+          vitamin: ['Daily micronutrients', 'Immunity support', 'Overall wellness'],
+          health: ['General health support', 'Convenient daily use'],
+          snack: ['On-the-go protein', 'Tasty and filling']
+        };
+        const descPanel = document.getElementById('panel-desc');
+        // Build an extended 8–10 line description
+        const ext = buildExtendedDescription(product, desc, (Array.isArray(product.highlights)&&product.highlights.length?product.highlights:benefitsFallback[product.category]||[]), product.nutrition);
+        const meta = `${product.flavor ? `<p class=\"text-sm text-gray-600\">Flavor: <span class=\"font-medium\">${product.flavor}</span></p>` : ''}${product.servings ? `<p class=\"text-sm text-gray-600\">Servings: <span class=\"font-medium\">${product.servings}</span></p>` : ''}`;
+        descPanel.innerHTML = ext + meta;
+
+        const benPanel = document.getElementById('panel-benefits');
+        const benefits = (Array.isArray(product.highlights) && product.highlights.length)
+          ? product.highlights
+          : (benefitsFallback[product.category] || ['Premium quality supplement']);
+        benPanel.innerHTML = `<ul class="list-disc pl-5 text-gray-700">${benefits.map(b => `<li>${b}</li>`).join('')}</ul>`;
+
+        const nutPanel = document.getElementById('panel-nutri');
+        const categoryNutritionDefaults = {
+          protein: { calories: 120, protein: 24, carbs: 3, fat: 2 },
+          gainer: { calories: 380, protein: 20, carbs: 70, fat: 5 },
+          amino: { calories: 10, protein: 0, carbs: 0, fat: 0 },
+          preworkout: { calories: 5, protein: 0, carbs: 1, fat: 0 },
+          vitamin: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+          health: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+          snack: { calories: 220, protein: 15, carbs: 20, fat: 8 }
+        };
+        const nBase = product.nutrition && (product.nutrition.calories!=null || product.nutrition.protein!=null || product.nutrition.carbs!=null || product.nutrition.fat!=null)
+          ? product.nutrition
+          : (categoryNutritionDefaults[product.category] || { calories: 100, protein: 10, carbs: 10, fat: 3 });
+        const n = nBase;
+        nutPanel.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="min-w-[320px] text-sm">
+              <thead>
+                <tr class="text-gray-600">
+                  <th class="text-left p-2">Nutrient</th>
+                  <th class="text-left p-2">Per serving</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${['calories','protein','carbs','fat'].map(k => n[k] != null ? `
+                  <tr class="border-t">
+                    <td class="p-2 capitalize">${k}</td>
+                    <td class="p-2">${n[k]}${k==='calories'?' kcal':' g'}</td>
+                  </tr>` : '').join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        // Tabs logic
+        function show(panel) {
+          document.getElementById('panel-desc').classList.add('hidden');
+          document.getElementById('panel-benefits').classList.add('hidden');
+          document.getElementById('panel-nutri').classList.add('hidden');
+          document.getElementById(panel).classList.remove('hidden');
+          // active button styles
+          const btns = [['tab-desc','panel-desc'],['tab-benefits','panel-benefits'],['tab-nutri','panel-nutri']];
+          btns.forEach(([b,p]) => {
+            const el = document.getElementById(b);
+            if (p===panel) { el.classList.add('bg-indigo-600','text-white'); el.classList.remove('hover:bg-gray-100'); }
+            else { el.classList.remove('bg-indigo-600','text-white'); el.classList.add('hover:bg-gray-100'); }
+          });
+        }
+        document.getElementById('tab-desc').addEventListener('click', () => show('panel-desc'));
+        document.getElementById('tab-benefits').addEventListener('click', () => show('panel-benefits'));
+        document.getElementById('tab-nutri').addEventListener('click', () => show('panel-nutri'));
+        show('panel-desc');
+        document.getElementById('btn-add').addEventListener('click', () => {
+          const qty = parseInt(document.getElementById('p-qty').value) || 1;
+          addToCart(product.name, product.price, img, product._id, qty);
+        });
+        document.getElementById('btn-buy').addEventListener('click', () => {
+          const qty = parseInt(document.getElementById('p-qty').value) || 1;
+          const buyNow = { name: product.name, price: product.price, image: mainImgEl.src || img, qty, productId: product._id };
+          localStorage.setItem('buyNowProduct', JSON.stringify(buyNow));
+          location.href = 'checkout.html';
+        });
+
+        // Image editor wiring
+        const urlInput = document.getElementById('img-url-input');
+        const btnPrev = document.getElementById('btn-img-preview');
+        const btnAdd = document.getElementById('btn-img-addthumb');
+        const btnSave = document.getElementById('btn-img-save');
+        if (btnPrev) btnPrev.addEventListener('click', (e) => {
+          e.preventDefault();
+          const u = (urlInput && urlInput.value || '').trim();
+          if (!u) return alert('Enter an image URL');
+          mainImgEl.src = u;
+        });
+        if (btnAdd) btnAdd.addEventListener('click', (e) => {
+          e.preventDefault();
+          const u = (urlInput && urlInput.value || '').trim();
+          if (!u) return alert('Enter an image URL');
+          if (!images.includes(u)) images.unshift(u);
+          renderThumbs();
+        });
+        if (btnSave) btnSave.addEventListener('click', async (e) => {
+          e.preventDefault();
+          try {
+            const u = (urlInput && urlInput.value || '').trim();
+            if (u) {
+              if (!images.includes(u)) images.unshift(u);
+            }
+            // optimistic UI
+            product.images = images.slice();
+            const body = JSON.stringify({ images: product.images });
+            // Try to PATCH product; backend may or may not allow it
+            try {
+              await authFetch(`/products/${product._id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
+              alert('Saved image to product');
+            } catch (err) {
+              console.warn('PATCH /products/:id failed; keeping local preview only.', err && err.message);
+              alert('Preview updated locally. Backend save is not enabled.');
+            }
+            renderThumbs();
+          } catch (e) {
+            alert(e.message || 'Failed to save image');
+          }
+        });
+
+        // Load wishlist to set initial states
+        let wishlistIds = new Set();
+        try {
+          const list = await apiGetWishlist();
+          const items = Array.isArray(list) ? list : (list.items || []);
+          wishlistIds = new Set(items.map(it => it.productId || it.product || it._id).filter(Boolean).map(String));
+        } catch {}
+
+        // Wishlist handlers for main product
+        const wishBtn = document.getElementById('btn-wish');
+        function setWishState(btn, isOn) {
+          if (!btn) return;
+          if (isOn) { btn.textContent = '♥ Wishlisted'; btn.classList.add('bg-rose-50'); }
+          else { btn.textContent = '♡ Wishlist'; btn.classList.remove('bg-rose-50'); }
+        }
+        setWishState(wishBtn, wishlistIds.has(String(product._id)));
+        wishBtn.addEventListener('click', async () => {
+          try {
+            const idStr = String(product._id);
+            if (wishlistIds.has(idStr)) {
+              await apiRemoveWishlist(product._id);
+              wishlistIds.delete(idStr);
+              setWishState(wishBtn, false);
+            } else {
+              await apiAddWishlist(product._id);
+              wishlistIds.add(idStr);
+              setWishState(wishBtn, true);
+            }
+          } catch (e) { alert(e.message || 'Wishlist action failed'); }
+        });
+
+        // Load related products by category
+        if (product.category) {
+          try {
+            const { items } = await apiListProducts({ category: product.category, pageSize: 6 });
+            const related = (items || []).filter(p => p._id !== product._id);
+            const container = document.getElementById('related');
+            if (related.length === 0) {
+              container.innerHTML = '<div class="text-gray-500">No related products</div>';
+            } else {
+              related.forEach(r => {
+                const rimg = (r.images && r.images[0]) || 'https://placehold.co/300x200?text=Product';
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 shadow rounded flex flex-col';
+                card.innerHTML = `
+                  <img src="${rimg}" class="h-40 w-full object-cover rounded cursor-pointer" alt="${r.name}">
+                  <h4 class="mt-2 font-semibold">${r.name}</h4>
+                  <p class="font-bold">₹${r.price}</p>
+                  <div class="mt-auto pt-3 flex justify-between items-center">
+                    <div class="flex gap-2">
+                      <button class="bg-indigo-600 text-white px-3 py-1 rounded btn-add-related">Add</button>
+                      <button class="border border-indigo-600 text-indigo-600 px-3 py-1 rounded btn-view-related">View</button>
+                    </div>
+                    <button class="border border-rose-500 text-rose-600 px-2 py-1 rounded btn-wish-related">♡</button>
+                  </div>
+                `;
+                card.querySelector('.btn-add-related').addEventListener('click', () => addToCart(r.name, r.price, rimg, r._id, 1));
+                card.querySelector('.btn-view-related').addEventListener('click', () => { location.href = `product.html?id=${r._id}`; });
+                card.querySelector('img').addEventListener('click', () => { location.href = `product.html?id=${r._id}`; });
+                const wishRBtn = card.querySelector('.btn-wish-related');
+                function setWishR(btn, on) { if (!btn) return; btn.textContent = on ? '♥' : '♡'; btn.classList.toggle('bg-rose-50', on); }
+                const idStr = String(r._id);
+                setWishR(wishRBtn, wishlistIds.has(idStr));
+                wishRBtn.addEventListener('click', async () => {
+                  try {
+                    if (wishlistIds.has(idStr)) {
+                      await apiRemoveWishlist(r._id);
+                      wishlistIds.delete(idStr);
+                      setWishR(wishRBtn, false);
+                    } else {
+                      await apiAddWishlist(r._id);
+                      wishlistIds.add(idStr);
+                      setWishR(wishRBtn, true);
+                    }
+                  } catch (e) { alert(e.message || 'Wishlist action failed'); }
+                });
+                container.appendChild(card);
+              });
+            }
+          } catch {}
+        }
+      } catch (e) {
+        document.getElementById('p-name').textContent = 'Product not found';
+      }
+    });
+  </script>
+</body>
+</html>
